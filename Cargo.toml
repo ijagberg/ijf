@@ -1,0 +1,12 @@
+[package]
+name = "ijf"
+version = "0.1.0"
+authors = ["Isak Jägberg <ijagberg@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+structopt = "0.3.20"
+async-std = "1.6.5"
+dotenv = "0.15.0"
