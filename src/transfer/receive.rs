@@ -1,5 +1,5 @@
-use async_std::net::TcpStream;
 use async_std::prelude::*;
+use async_std::{net::TcpListener, task};
 use std::error::Error;
 use structopt::StructOpt;
 
@@ -26,17 +26,42 @@ impl Receiver {
 
     pub async fn receive(self) -> Result<(), Box<dyn Error>> {
         println!("receiving with opts: {:#?}", self.opts);
-        let mut stream = TcpStream::connect(&self.opts.formatted_address()).await?;
+        let listener = TcpListener::bind(&self.opts.formatted_address()).await?;
 
-        let mut buffer = vec![0u8; 1024];
-        let amount: usize = stream.read(&mut buffer).await?;
+        loop {
+            // Asynchronously wait for an inbound socket.
+            let (mut socket, _) = listener.accept().await?;
 
-        println!("received {} bytes", amount);
+            // And this is where much of the magic of this server happens. We
+            // crucially want all clients to make progress concurrently, rather than
+            // blocking one on completion of another. To achieve this we use the
+            // `tokio::spawn` function to execute the work in the background.
+            //
+            // Essentially here we're executing a new task to run concurrently,
+            // which will allow all of our clients to be processed concurrently.
 
-        let content = String::from_utf8(buffer)?;
+            task::spawn(async move {
+                let mut buf = vec![0; 1024];
 
-        println!("content: '{}'", content);
+                // In a loop, read data from the socket and write the data back.
+                loop {
+                    let bytes = socket
+                        .read(&mut buf)
+                        .await
+                        .expect("failed to read data from socket");
 
-        Ok(())
+                    println!("received {} bytes", bytes);
+
+                    if let Ok(content) = String::from_utf8(buf.clone()) {
+                        println!("content: '{}'", content);
+                    } else {
+                        println!("invalid utf8");
+                    }
+                    if bytes == 0 {
+                        return;
+                    }
+                }
+            });
+        }
     }
 }
