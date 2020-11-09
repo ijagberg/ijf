@@ -9,6 +9,7 @@ pub struct SenderOpts {
     address: String,
     #[structopt(long)]
     port: u16,
+    #[structopt(required = true)]
     files: Vec<String>,
 }
 
@@ -43,6 +44,7 @@ impl Sender {
         println!("sending with opts: {:#?}", self.opts);
         let mut stream = TcpStream::connect(&self.opts.formatted_address()).await?;
         stream.write_all(b"Hello!").await?;
+        stream.write_all(b"Helloo!").await?;
 
         Ok(())
     }

@@ -42,24 +42,20 @@ impl Receiver {
 
             task::spawn(async move {
                 let mut buf = vec![0; 1024];
-
-                // In a loop, read data from the socket and write the data back.
                 loop {
                     let bytes = socket
                         .read(&mut buf)
                         .await
                         .expect("failed to read data from socket");
-
-                    println!("received {} bytes", bytes);
-
-                    if let Ok(content) = String::from_utf8(buf.clone()) {
-                        println!("content: '{}'", content);
-                    } else {
-                        println!("invalid utf8");
-                    }
                     if bytes == 0 {
-                        return;
+                        break;
                     }
+                }
+
+                if let Ok(content) = String::from_utf8(buf) {
+                    println!("content: '{}'", content);
+                } else {
+                    println!("invalid utf8");
                 }
             });
         }
