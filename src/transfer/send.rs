@@ -1,6 +1,6 @@
 use async_std::net::TcpStream;
 use async_std::prelude::*;
-use std::error::Error;
+use std::{error::Error, io::Read};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Clone)]
@@ -10,7 +10,7 @@ pub struct SenderOpts {
     #[structopt(long)]
     port: u16,
     #[structopt(required = true)]
-    files: Vec<String>,
+    file: String,
 }
 
 impl SenderOpts {
@@ -22,8 +22,8 @@ impl SenderOpts {
         self.port
     }
 
-    fn files(&self) -> &Vec<String> {
-        &self.files
+    fn file(&self) -> &str {
+        &self.file
     }
 
     fn formatted_address(&self) -> String {
@@ -42,9 +42,27 @@ impl Sender {
 
     pub async fn send(self) -> Result<(), Box<dyn Error>> {
         println!("sending with opts: {:#?}", self.opts);
+
+        self.send_file().await?;
+
+        Ok(())
+    }
+
+    async fn send_file(&self) -> Result<(), Box<dyn Error>> {
+        let mut file = std::fs::File::open(self.opts.file())?;
+
+        let mut buffer = Vec::new();
+
+        file.read(&mut buffer)?;
+
         let mut stream = TcpStream::connect(&self.opts.formatted_address()).await?;
-        stream.write_all(b"Hello!").await?;
-        stream.write_all(b"Helloo!").await?;
+        
+        println!("sending {} bytes", buffer.len());
+        let timer = std::time::Instant::now();
+
+        stream.write_all(&buffer).await?;
+
+        println!("took {:?}", timer.elapsed());
 
         Ok(())
     }

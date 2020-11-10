@@ -11,7 +11,7 @@ pub struct ReceiverOpts {
 
 impl ReceiverOpts {
     fn formatted_address(&self) -> String {
-        format!("0.0.0.0:{}", self.port)
+        format!("localhost:{}", self.port)
     }
 }
 
